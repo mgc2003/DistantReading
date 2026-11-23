@@ -1,0 +1,3 @@
+{
+  "_comment": "Optional hand-written topic names, keyed by topic id after you review the model output, e.g. {\"0\": \"Copyright & training data\"}. Leave empty to use the top three terms."
+}
