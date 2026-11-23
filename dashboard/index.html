@@ -27,8 +27,8 @@
     <label>To <select id="f-to"></select></label>
     <div class="seg" role="radiogroup" aria-label="Corpus tier">
       <button type="button" role="radio" data-tier="all" aria-checked="true">All posts</button>
-      <button type="button" role="radio" data-tier="A" aria-checked="false">AI imagery in games</button>
-      <button type="button" role="radio" data-tier="B" aria-checked="false">Gen-AI debate</button>
+      <button type="button" role="radio" data-tier="A" aria-checked="false"><span class="dot a" aria-hidden="true"></span>AI imagery in games</button>
+      <button type="button" role="radio" data-tier="B" aria-checked="false"><span class="dot b" aria-hidden="true"></span>Gen-AI debate</button>
     </div>
     <label>Topic <select id="f-topic"></select></label>
     <button id="f-reset" class="btn ghost" type="button">Reset</button>
@@ -49,6 +49,16 @@
       <div class="chart"></div>
     </article>
 
+    <article class="card" data-chart="pie">
+      <header><h2>Tone of the discussion</h2><p>Share of negative, neutral and positive posts in each tier. The number in the middle is the mean sentiment.</p></header>
+      <div class="legend" id="legend-pie"></div>
+      <div class="chart"></div>
+    </article>
+    <article class="card" data-chart="histogram">
+      <header><h2>Sentiment distribution</h2><p>Number of posts by sentiment score.</p></header>
+      <div class="chart"></div>
+    </article>
+
     <article class="card" data-chart="map">
       <header><h2>Topic map</h2><p>Topics placed by how many terms they share. Size is post count; color is mean sentiment. Click a topic to focus it.</p></header>
       <div class="legend" id="legend-map"></div>
@@ -66,15 +76,13 @@
       <div class="chart"></div>
     </article>
 
-    <article class="card" data-chart="histogram">
-      <header><h2>Sentiment distribution</h2><p>Number of posts by sentiment score.</p></header>
-      <div class="chart"></div>
-    </article>
 
-    <article class="card" data-chart="detail">
+    <article class="card wide" data-chart="detail">
       <header><h2 id="detail-title">Topic detail</h2><p id="detail-sub">Top terms and example excerpts. Pick a topic above.</p></header>
-      <div class="chart"></div>
-      <ul class="examples" id="examples"></ul>
+      <div class="detail-body">
+        <div class="chart"></div>
+        <ul class="examples" id="examples"></ul>
+      </div>
     </article>
 
     <article class="card wide" data-chart="thread">
