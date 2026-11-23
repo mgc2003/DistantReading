@@ -1,0 +1,8 @@
+# collect.py
+wordfreq==3.1.1
+# analyze.py
+numpy>=1.26
+scikit-learn>=1.4
+vaderSentiment==3.3.2
+# tests
+pytest>=8

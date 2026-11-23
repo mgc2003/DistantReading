@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Imagery Debate on HN</title>
+  <meta name="description" content="Topic modeling and sentiment analysis of Hacker News discussion about AI-generated imagery in video games and the wider generative-AI debate. All accounts pseudonymized.">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    try { const t = localStorage.getItem("dr-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">DistantReading · Hacker News study</p>
+      <h1>The AI-imagery debate on Hacker News</h1>
+      <p class="lede">How Hacker News discusses AI-generated imagery in video games, set against the wider
+        generative-AI argument. Topics come from an NMF topic model; sentiment is VADER.
+        Every account is shown under a pseudonym.</p>
+    </div>
+    <button id="theme-toggle" class="btn ghost" type="button" aria-label="Toggle light or dark theme">Theme</button>
+  </header>
+
+  <section class="filters" aria-label="Filters">
+    <label>From <select id="f-from"></select></label>
+    <label>To <select id="f-to"></select></label>
+    <div class="seg" role="radiogroup" aria-label="Corpus tier">
+      <button type="button" role="radio" data-tier="all" aria-checked="true">All posts</button>
+      <button type="button" role="radio" data-tier="A" aria-checked="false">AI imagery in games</button>
+      <button type="button" role="radio" data-tier="B" aria-checked="false">Gen-AI debate</button>
+    </div>
+    <label>Topic <select id="f-topic"></select></label>
+    <button id="f-reset" class="btn ghost" type="button">Reset</button>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+  <main class="grid">
+    <article class="card wide" data-chart="volume">
+      <header><h2>Discussion volume by month</h2><p>Relevant posts and comments per month, by corpus tier. Numbered markers are events.</p></header>
+      <div class="legend" id="legend-volume"></div>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card wide" data-chart="sentiment">
+      <header><h2>Mean sentiment by month</h2><p>Average VADER score per post (−1 to +1). Months with fewer than 5 posts are left out.</p></header>
+      <div class="legend" id="legend-sentiment"></div>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card" data-chart="map">
+      <header><h2>Topic map</h2><p>Topics placed by how many terms they share. Size is post count; color is mean sentiment. Click a topic to focus it.</p></header>
+      <div class="legend" id="legend-map"></div>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card" data-chart="topicSentiment">
+      <header><h2>Sentiment by topic</h2><p>Share of negative, neutral and positive posts in each topic, sorted from most negative to most positive.</p></header>
+      <div class="legend" id="legend-ts"></div>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card wide" data-chart="multiples">
+      <header><h2>Topics over time</h2><p>Each topic's share of the month's posts. Hover a panel to read a month.</p></header>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card" data-chart="histogram">
+      <header><h2>Sentiment distribution</h2><p>Number of posts by sentiment score.</p></header>
+      <div class="chart"></div>
+    </article>
+
+    <article class="card" data-chart="detail">
+      <header><h2 id="detail-title">Topic detail</h2><p id="detail-sub">Top terms and example excerpts. Pick a topic above.</p></header>
+      <div class="chart"></div>
+      <ul class="examples" id="examples"></ul>
+    </article>
+
+    <article class="card wide" data-chart="thread">
+      <header><h2>Thread explorer</h2><p>One discussion as a reply tree. The center is the story; each dot is a comment, colored by sentiment. Drag to pan, scroll to zoom.</p></header>
+      <div class="thread-controls"><label>Thread <select id="thread-select"></select></label></div>
+      <div class="legend" id="legend-thread"></div>
+      <div class="chart tall"></div>
+    </article>
+  </main>
+
+  <section class="methods">
+    <h2>Methods &amp; ethics</h2>
+    <div class="methods-grid">
+      <div>
+        <h3>Data</h3>
+        <p id="m-data">Posts were collected from the Algolia HN Search API and full comment trees were downloaded for
+          the most relevant stories.</p>
+        <h3>Corpus tiers</h3>
+        <p><strong>AI imagery in games</strong>: the post or its story mentions generative-AI imagery
+          (AI art, Midjourney, Stable Diffusion, AI assets…) and a games term (Steam, gamedev, indie, concept art…).
+          <strong>Gen-AI debate</strong>: generative-AI imagery without a games term, or general generative AI
+          alongside debate vocabulary (copyright, artists, jobs, ethics…).</p>
+      </div>
+      <div>
+        <h3>Models</h3>
+        <p id="m-models">TF-IDF and NMF topic model; VADER sentiment averaged over each post's sentences. Topic
+          labels are the top three terms unless a researcher has named them. Sentiment is a proxy for tone, not for
+          stance: a post can sound negative while supporting AI art.</p>
+        <h3>Pseudonymization</h3>
+        <p>Usernames are replaced with stable salted-hash pseudonyms (<code>user-xxxxxxxx</code>) at collection
+          time. Usernames mentioned in comment text and HN profile and comment links are removed. Excerpts are cut to a few
+          words and are not linked to HN, but a verbatim phrase can still be found with a search engine.</p>
+      </div>
+    </div>
+    <p class="foot" id="m-foot"></p>
+  </section>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+  <script src="js/vendor/d3.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
