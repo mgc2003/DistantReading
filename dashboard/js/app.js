@@ -191,15 +191,17 @@ function renderTiles() {
   const s = d3.sum(rs, (r) => r.s);
   const pos = d3.sum(rs, (r) => r.pos);
   const neg = d3.sum(rs, (r) => r.neg);
+  const nA = d3.sum(rs.filter((r) => r.t === "A"), (r) => r.n);
   const tiles = [
-    ["Posts in selection", fmtInt(n), `${fmtInt(DATA.meta.counts.posts)} in whole corpus`],
-    ["Mean sentiment", n ? fmtSent(s / n) : "–", "VADER, −1 to +1"],
-    ["Negative posts", n ? fmtPct(neg / n) : "–", `score ≤ −${DATA.meta.params.neutral_band}`],
-    ["Positive posts", n ? fmtPct(pos / n) : "–", `score ≥ +${DATA.meta.params.neutral_band}`],
-    ["Pseudonymized accounts", fmtInt(DATA.meta.counts.accounts), "whole corpus"],
+    ["Posts in selection", fmtInt(n), `${fmtInt(DATA.meta.counts.posts)} in whole corpus`, ""],
+    ["AI imagery in games", n ? fmtPct(nA / n) : "–", `${fmtInt(nA)} posts in selection`, "t-a"],
+    ["Mean sentiment", n ? fmtSent(s / n) : "–", "VADER, −1 to +1", "t-mean"],
+    ["Negative posts", n ? fmtPct(neg / n) : "–", `score ≤ −${DATA.meta.params.neutral_band}`, "t-neg"],
+    ["Positive posts", n ? fmtPct(pos / n) : "–", `score ≥ +${DATA.meta.params.neutral_band}`, "t-pos"],
+    ["Pseudonymized accounts", fmtInt(DATA.meta.counts.accounts), "whole corpus", ""],
   ];
-  document.getElementById("tiles").replaceChildren(...tiles.map(([k, v, sub]) => {
-    const t = h("div", "tile");
+  document.getElementById("tiles").replaceChildren(...tiles.map(([k, v, sub, cls]) => {
+    const t = h("div", "tile " + cls);
     t.append(h("div", "k", k), h("div", "v", v), h("div", "s", sub));
     return t;
   }));
@@ -327,15 +329,22 @@ RENDERERS.sentiment = (el, width) => {
     .call(d3.axisBottom(x).tickValues(monthTicks(months, width)).tickFormat((m) => tickFormat(m, months)).tickSizeOuter(0))
     .call((g) => g.select(".domain").attr("stroke", C.axis));
   const line = d3.line().defined((d) => d.v != null).x((d) => x(d.m)).y((d) => y(d.v)).curve(d3.curveMonotoneX);
+  const ends = [];
   series.forEach((s) => {
     svg.append("path").attr("fill", "none").attr("stroke", tierColor(s.t)).attr("stroke-width", 2)
       .attr("stroke-linejoin", "round").attr("d", line(s.values));
     const last = s.values.filter((d) => d.v != null).at(-1);
-    if (last && width >= 520) {
-      svg.append("text").attr("class", "label").attr("x", x(last.m) + 8).attr("y", y(last.v)).attr("dy", "0.35em")
-        .text(TIER_NAME[s.t]);
-    }
+    if (last && width >= 520) ends.push({ t: s.t, x: x(last.m) + 8, y: y(last.v) });
   });
+  ends.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) {
+    if (ends[i].y - ends[i - 1].y < 15) {
+      const mid = (ends[i].y + ends[i - 1].y) / 2;
+      ends[i - 1].y = mid - 7.5;
+      ends[i].y = mid + 7.5;
+    }
+  }
+  ends.forEach((e) => svg.append("text").attr("class", "label").attr("x", e.x).attr("y", e.y).attr("dy", "0.35em").text(TIER_NAME[e.t]));
   const cross = svg.append("line").attr("class", "crosshair").attr("y1", M.t).attr("y2", H - M.b).attr("opacity", 0);
   const dots = svg.append("g");
   svg.append("rect").attr("x", M.l).attr("y", M.t).attr("width", width - M.l - M.r).attr("height", H - M.t - M.b)
@@ -575,6 +584,71 @@ RENDERERS.multiples = (el, width) => {
         });
       })
       .on("pointerleave", () => { crosses.forEach((c) => { c.cross.attr("opacity", 0); c.dot.attr("opacity", 0); }); hideTip(); });
+  });
+  return spec;
+};
+
+// ------------------------------------------------------------ pie chart
+
+RENDERERS.pie = (el, width) => {
+  const tiers = activeTiers();
+  const parts = [
+    { key: "neg", name: "Negative", color: C.neg, ink: "#ffffff" },
+    { key: "neu", name: "Neutral", color: C.neu, ink: C.text },
+    { key: "pos", name: "Positive", color: C.pos, ink: "#ffffff" },
+  ];
+  legend("legend-pie", parts.map((p) => ({ label: p.name, color: p.color })));
+  const rs = rows({ tier: false });
+  const groups = tiers.map((t) => {
+    const g = rs.filter((r) => r.t === t);
+    const n = d3.sum(g, (r) => r.n), pos = d3.sum(g, (r) => r.pos), neg = d3.sum(g, (r) => r.neg);
+    return { t, n, mean: n ? d3.sum(g, (r) => r.s) / n : 0, pos, neg, neu: n - pos - neg };
+  });
+  const spec = {
+    columns: ["Tier", "Sentiment", "Posts", "Share"],
+    rows: groups.flatMap((g) => parts.map((p) => [TIER_NAME[g.t], p.name, g[p.key], g.n ? +(g[p.key] / g.n).toFixed(3) : 0])),
+  };
+  if (!d3.sum(groups, (g) => g.n)) { empty(el); return spec; }
+
+  const cols = groups.length;
+  const cellW = width / cols;
+  const R = Math.max(70, Math.min(118, cellW / 2 - 14));
+  const H = R * 2 + 56;
+  const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${width} ${H}`).attr("role", "img")
+    .attr("aria-label", "Pie charts of negative, neutral and positive posts per tier");
+  const pie = d3.pie().sort(null).value((p) => p.v);
+  const arc = d3.arc().innerRadius(R * 0.56).outerRadius(R).cornerRadius(3);
+  const labelArc = d3.arc().innerRadius(R * 0.78).outerRadius(R * 0.78);
+  groups.forEach((g, i) => {
+    const cx = cellW * i + cellW / 2;
+    const cy = 34 + R;
+    const head = svg.append("g").attr("transform", `translate(${cx},14)`);
+    const title = TIER_NAME[g.t];
+    const tw = title.length * 6.6;
+    head.append("circle").attr("cx", -tw / 2 - 8).attr("cy", 0).attr("r", 5).attr("fill", tierColor(g.t));
+    head.append("text").attr("class", "label strong").attr("text-anchor", "middle").attr("dy", "0.35em").text(title);
+    const g0 = svg.append("g").attr("transform", `translate(${cx},${cy})`);
+    if (!g.n) { g0.append("text").attr("text-anchor", "middle").text("No posts"); return; }
+    const arcs = pie(parts.map((p) => ({ ...p, v: g[p.key] })));
+    g0.selectAll("path").data(arcs).join("path")
+      .attr("d", arc).attr("fill", (d) => d.data.color).attr("stroke", C.surface).attr("stroke-width", 2)
+      .attr("tabindex", 0)
+      .attr("aria-label", (d) => `${title}: ${d.data.name} ${fmtPct(d.data.v / g.n)}`)
+      .on("pointerenter pointermove focus", function (event, d) {
+        d3.select(this).attr("opacity", 0.85);
+        const fn = (t) => t.append(tipTitle(title), tipRow(fmtPct(d.data.v / g.n), `${d.data.name} · ${fmtInt(d.data.v)} of ${fmtInt(g.n)} posts`, d.data.color));
+        event.type === "focus" ? focusTip(this, fn) : showTip(event, fn);
+      })
+      .on("pointerleave blur", function () { d3.select(this).attr("opacity", 1); hideTip(); });
+    g0.selectAll("text.slice").data(arcs.filter((d) => d.endAngle - d.startAngle > 0.35)).join("text")
+      .attr("class", "slice").attr("transform", (d) => `translate(${labelArc.centroid(d)})`)
+      .attr("text-anchor", "middle").attr("dy", "0.35em").style("fill", (d) => d.data.ink)
+      .style("font-size", "12px").style("font-weight", 600).style("pointer-events", "none")
+      .text((d) => fmtPct(d.data.v / g.n));
+    g0.append("text").attr("text-anchor", "middle").attr("dy", "-0.1em")
+      .style("fill", C.text).style("font-size", `${Math.round(R / 4)}px`).style("font-weight", 600)
+      .style("font-variant-numeric", "normal").text(fmtSent(g.mean));
+    g0.append("text").attr("text-anchor", "middle").attr("dy", "1.5em").text(`${fmtInt(g.n)} posts`);
   });
   return spec;
 };

@@ -9,9 +9,9 @@
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
   --wash: rgba(11, 11, 11, 0.05);
-  /* tiers: emphasis encoding (A is the study focus) */
-  --tier-a: #0b0b0b;
-  --tier-b: #b5b3aa;
+  /* tiers: categorical orange / aqua (validated light + dark) */
+  --tier-a: #eb6834;
+  --tier-b: #1baf7a;
   /* topic accent (single-series magnitude) */
   --accent: #6250d6;
   /* sentiment: diverging red <-> gray <-> blue */
@@ -34,8 +34,8 @@
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.10);
     --wash: rgba(255, 255, 255, 0.06);
-    --tier-a: #f0efec;
-    --tier-b: #6b6a65;
+    --tier-a: #d95926;
+    --tier-b: #199e70;
     --accent: #9085e9;
     --neg: #e66767;
     --neu: #5f5e5a;
@@ -54,8 +54,8 @@
   --axis: #383835;
   --border: rgba(255, 255, 255, 0.10);
   --wash: rgba(255, 255, 255, 0.06);
-  --tier-a: #f0efec;
-  --tier-b: #6b6a65;
+  --tier-a: #d95926;
+  --tier-b: #199e70;
   --accent: #9085e9;
   --neg: #e66767;
   --neu: #5f5e5a;
@@ -80,7 +80,16 @@ h3 { font-size: 14px; font-weight: 600; margin-top: 12px; }
 p { margin: 4px 0 0; }
 code { font-size: 0.9em; }
 
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 28px 0 16px; }
+.page-header {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+  margin: 16px 0 0; padding: 24px; border-radius: 16px; border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tier-a) 22%, transparent), transparent 55%),
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+    radial-gradient(120% 160% at 50% 120%, color-mix(in srgb, var(--tier-b) 18%, transparent), transparent 60%),
+    var(--surface);
+}
+.page-header .btn { background: var(--surface); }
 .eyebrow { color: var(--muted); font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
 .lede { color: var(--text-2); max-width: 760px; margin-top: 8px; }
 
@@ -110,9 +119,31 @@ select {
 }
 .seg button + button { border-left: 1px solid var(--border); }
 .seg button[aria-checked="true"] { background: var(--text); color: var(--surface); }
+.seg .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.seg .dot.a { background: var(--tier-a); }
+.seg .dot.b { background: var(--tier-b); }
+.card > header h2::before {
+  content: ""; display: inline-block; width: 4px; height: 14px; border-radius: 2px; margin-right: 8px;
+  vertical-align: -1px; background: var(--card-color, var(--accent));
+}
+[data-chart="volume"] > header h2::before, [data-chart="sentiment"] > header h2::before { background: linear-gradient(var(--tier-a), var(--tier-b)); }
+[data-chart="pie"] > header h2::before, [data-chart="histogram"] > header h2::before,
+[data-chart="map"] > header h2::before, [data-chart="topicSentiment"] > header h2::before,
+[data-chart="thread"] > header h2::before { background: linear-gradient(var(--pos), var(--neg)); }
+.detail-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .detail-body { grid-template-columns: minmax(0, 1fr); } }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
-.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  position: relative; overflow: hidden;
+}
+.tile::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--tile-color, var(--accent)); }
+.tile.t-mean::before { background: linear-gradient(90deg, var(--neg), var(--mid), var(--pos)); }
+.tile.t-neg { --tile-color: var(--neg); }
+.tile.t-pos { --tile-color: var(--pos); }
+.tile.t-a { --tile-color: var(--tier-a); }
+.tile.t-b { --tile-color: var(--tier-b); }
 .tile .k { color: var(--text-2); font-size: 13px; }
 .tile .v { font-size: 28px; font-weight: 600; margin-top: 2px; }
 .tile .s { color: var(--muted); font-size: 12px; }
